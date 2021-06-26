@@ -28,6 +28,7 @@ In this challenge, we were given a message.txt file that contained a long base64
 domectf{T5EN7Uxp7KjluznduX8tmXlhc5lX0qHH}
 ```
 ![](/assets/images/cocon-xii-ctf/botswana.png)
+
 In this challenge as the challenge, the description says to read the rules page that was given at the time of registration. On that page, there was a QR code when scanned spits out a link to a gist snippet.
 ```
 https://gist.githubusercontent.com/anees264/90af6d6e6b80c65b18a15e7c0dd769bd/raw/eb0bdcbf19368d9dc4ed66450816ca4314e88dd4/the_rules.txt
