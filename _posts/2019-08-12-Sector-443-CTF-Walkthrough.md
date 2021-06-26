@@ -80,6 +80,7 @@ print(String.fromCharCode(102, 108, 97,103,123,55,56,54,79,115,69,114,116,107,49
 ![](/assets/images/sector443/sector443_steg.png)
 
 The challenge gives us a GIF of Captain America flying.
+
 ![](/assets/images/sector443/captain.gif)
 
 By running binwalk over it to check for hidden files we can see that there is a RAR file embedded in the GIF.
@@ -105,6 +106,7 @@ In this challenge we are given a btsnoop log file form which we have to find the
 Now we have to find the Unlock Request , As the challenge description says the the unlock request is send through an app so the Source would be a Smart Phone and the destination is the Smart Lock.
 
 By Filtering the source and searching for a Value attribute I was able to figure out the Unlock request.
+
 ![](/assets/images/sector443/wireshark1.png)
 
 As the image shows a Send Write Request is generated from a Redmi4 to the Smart Lock with the handle of 0x0003 and as per the challenge description there should be 5 requests by counting them I knew this was it.
@@ -114,6 +116,8 @@ As the image shows a Send Write Request is generated from a Redmi4 to the Smart 
 ![](/assets/images/sector443/sector443_osint.png)
 
 In this challenge the goal is to find a person whose name is "Peter Grulich" who likes ponies and we need to find the flag.I started my search in google by entering the following.
+
+
 ![](/assets/images/sector443/sector443_osint_google.png)
 
 ![](/assets/images/sector443/sector443_osint_git.png)
