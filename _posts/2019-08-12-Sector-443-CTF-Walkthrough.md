@@ -13,7 +13,7 @@ categories:
   - infosec
 tags:  
   - ctf
-  - jeoprady
+  - jeopardy
 ---
 This is where it all started I was watching an episode of The Boys when a friend of mine gave me a link to this CTF and asked me to play if I had the time, and I has plenty XD  
 Most of the challenges where based on reverse engineering binaries.
