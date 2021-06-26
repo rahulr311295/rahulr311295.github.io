@@ -13,7 +13,7 @@ categories:
   - infosec
 tags:  
   - ctf
-  - jeoprady
+  - jeopardy
   - dome ctf
 ---
 Before we start reading can we just admire the Badge that was given as a part of DOME CTF.
