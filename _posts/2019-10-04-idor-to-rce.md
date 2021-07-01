@@ -13,6 +13,7 @@ categories:
 tags:  
   - idor
   - rce
+  - bugbounty
 ---
 
 
