@@ -286,11 +286,13 @@ By using this credential we can use crackmapexec and smbclient to connect to the
 From the above output there are two shares that are not default .
 
 **Smbclient**
+
 ![](/assets/images/ra/lilsmbclient.png)
 
 In the shared folder there are installation files for Spark a live chat application and also the first flag for the machine.The version of spark provided in the share is vulnerable to [CVE-2020-12772](https://github.com/theart42/cves/blob/master/cve-2020-12772/CVE-2020-12772.md).To exploit this vulnerability we need to install spark on our local machine and since spark uses windows authentication we can use the credentials of the already compramised user to login.
 
 **Spark login screen**
+
 ![](/assets/images/ra/spark1.png)
 
 Upon loggin in there is an error due certificate issue which can be bypass by going to the advanced option and enabling the not to verify cetificate toggle
@@ -319,7 +321,8 @@ Now we can use this credential to check access on the server using crackmapexec.
 
 The user buse has access to WINRM we can use evil-winrm to gain access to the server.
 
-**Evil WINRM **
+**Evil WINRM**
+
 ![](/assets/images/ra/busewinrm.png)
 
 Logging into the server using winrm we can get the second flag.We can now enumerate the current user to find the privileges that the user have.
@@ -363,7 +366,8 @@ The user has only access to SMB we can now use smbclient to download the hosts f
 ![](/assets/images/ra/britsmbclient.png)
 ![](/assets/images/ra/britsmbclient2.png)
 
-** Command Injection Payload **
+**Command Injection Payload**
+
 ![](/assets/images/ra/host.png)
 
 ![](/assets/images/ra/puthost.png)
