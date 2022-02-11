@@ -248,8 +248,10 @@ Visiting the webserver shows a static website for  **windcorp** which contains i
 
 **Webpage**
 ![](/assets/images/ra/webpage.png)
+
 **Currently online IT staff**
 ![](/assets/images/ra/itstaffs.png)
+
 **Employees**
 ![](/assets/images/ra/users.png)
 
@@ -299,6 +301,7 @@ Upon loggin in there is an error due certificate issue which can be bypass by go
 Now we can send the exploit payload to buse as he is the only IT staff member that is currently online and mean while start responder to capure incoming NTLM hashes.
 
 ![](/assets/images/ra/spark4.png)
+
 **Responder to capture hashes**
 ![](/assets/images/ra/busehash.png)
 
@@ -310,6 +313,7 @@ Now we can use this credential to check access on the server using crackmapexec.
 
 **Checking SMB access**
 ![](/assets/images/ra/busesmbtest.png)
+
 **Checking WINRM access**
 ![](/assets/images/ra/busewinrmtest.png)
 
