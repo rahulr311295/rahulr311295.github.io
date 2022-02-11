@@ -246,12 +246,15 @@ Service detection performed. Please report any incorrect results at https://nmap
 ```
 
 ## Port 80 (webserver)
-Visiting the webserver shows a company website for **windcorp** which contains information regaring the company the employees etc also in the website there is something that stands out a space that shows IT support people who are online at the moment which will be used in a later stage.
+Visiting the webserver shows a static website for  **windcorp** which contains information regaring the company the employees etc also in the website there is something that stands out a space that shows IT support people who are online at the moment which will be used in a later stage.
 
-![](/assets/images/ra.1.1/webpage.png)
+**Webpage**
+![](/assets/images/ra/webpage.png)
+**Currently online IT staff**
+![](/assets/images/ra/itstaffs.png)
+**Employees**
+![](/assets/images/ra/users.png)
 
-![](/assets/images/ra.1.1/itstaffs.png)
+Also in the webpage there is a button to reset password for users which askes a secutity question which is required to change the password.One of the sercurity question is "**What is/was your favourite pets name ?**".
 
-![](/assets/images/ra.1.1/users.png)
-
-
+![](/assets/images/ra/resetpass.png)
