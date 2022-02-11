@@ -5,7 +5,7 @@ excerpt: "Ra is a windows machine which starts with a typical business website f
 date: 2022-02-11
 classes: wide
 header:
-  teaser: /assets/images/ra1.1/ra.png
+  teaser: /assets/images/ra/ra.png
   teaser_home_page: true
 categories:
   - tryhackme
@@ -27,9 +27,6 @@ Next step would be to take their crown jewels and get full access to their inter
 
 Happy Hacking!
 ```
-
-# Recon
-
 ## Nmap
 A Nmap  full scan shows multiple open ports running different services one of then that stands out is port **80** which is a webserver also in the nmap output there is a domain name which can be added to out hosts file.
 ```bash
@@ -258,3 +255,118 @@ Visiting the webserver shows a static website for  **windcorp** which contains i
 Also in the webpage there is a button to reset password for users which askes a secutity question which is required to change the password.One of the sercurity question is "**What is/was your favourite pets name ?**".
 
 ![](/assets/images/ra/resetpass.png)
+
+In the employee section there is only one user who has a dog that is Lily.Opening the image the URI leaks the username and the dog's name which can be used to reset the password and compramise the account.
+
+**Potential username and security question's answer**
+![](/assets/images/ra/lily.png)
+
+![](/assets/images/ra/resetpass1.png)
+
+On submitting the request  a new password will be generated and displayed.
+
+![](/assets/images/ra/newpass.png)
+
+Using this credential we can check weather we have smb access or winrm access using crackmapexec.
+
+**Checking SMB access**
+![](/assets/images/ra/lilsmbtest.png)
+
+**Checking WINRM access**
+![](/assets/images/ra/lilwinrmtest.png)
+
+By using this credential we can use crackmapexec and smbclient to connect to the SMB server and see what shares and files are there.
+
+**Crackmapexec SMB shares**
+![](/assets/images/ra/lilsmbshares.png)
+
+From the above output there are two shares that are not default .
+
+**Smbclient**
+![](/assets/images/ra/lilsmbclient.png)
+
+In the shared folder there are installation files for Spark a live chat application and also the first flag for the machine.The version of spark provided in the share is vulnerable to [CVE-2020-12772](https://github.com/theart42/cves/blob/master/cve-2020-12772/CVE-2020-12772.md).To exploit this vulnerability we need to install spark on our local machine and since spark uses windows authentication we can use the credentials of the already compramised user to login.
+
+**Spark login screen**
+![](/assets/images/ra/spark1.png)
+
+Upon loggin in there is an error due certificate issue which can be bypass by going to the advanced option and enabling the not to verify cetificate toggle
+
+![](/assets/images/ra/spark2.png)
+![](/assets/images/ra/spark3.png)
+
+Now we can send the exploit payload to buse as he is the only IT staff member that is currently online and mean while start responder to capure incoming NTLM hashes.
+
+![](/assets/images/ra/spark4.png)
+**Responder to capture hashes**
+![](/assets/images/ra/busehash.png)
+
+We can now use hashcat to crack the captured hash for the user buse.
+
+![](/assets/images/ra/busehashcat.png)
+
+Now we can use this credential to check access on the server using crackmapexec.
+
+**Checking SMB access**
+![](/assets/images/ra/busesmbtest.png)
+**Checking WINRM access**
+![](/assets/images/ra/busewinrmtest.png)
+
+The user buse has access to WINRM we can use evil-winrm to gain access to the server.
+
+**Evil WINRM **
+![](/assets/images/ra/busewinrm.png)
+
+Logging into the server using winrm we can get the second flag.We can now enumerate the current user to find the privileges that the user have.
+
+![](/assets/images/ra/buseinfo.png)
+
+The user buse is a member of the group IT by using bloodhound to enumerate different relations.
+
+![](/assets/images/ra/sharphound.png)
+
+Importing the archive to bloodhound and searching for the user buse and listing its details it can be seen that the user buser is a member of the group IT which is also a member of the group Account Operators.
+
+![](/assets/images/ra/busebloodhound.png)
+
+Members in this group has extended rights to change a user's password this can be confimed using PowerView.
+
+![](/assets/images/ra/busepasswdresetperm.png)
+
+Upon further exploring the machine there is a directory called scripts in the C drive that contains a powershell script which contains a file name that is being read from a user's home directory which is being run by the Administrator user or run as the Administrator user.
+
+![](/assets/images/ra/scriptsdir.png)
+![](/assets/images/ra/scripts.png)
+![](/assets/images/ra/scripts1.png)
+
+We can see that the file hosts.txt is being read and the contents is being passed to the variable p which is then forwarded to Invoke-Expression.This code is vulnerable to code execution by adding a semicolon to the host file and adding arbitarary commands to it.
+When the script is executed and the content of the hosts file is passed to Invoke-Expression the first command that is Test-Connection will fail and the commands after the semicolon will be executed.
+Now we can use the extended rights of the user buse to change the password of the user mentioned in the script to edit the file.
+
+![](/assets/images/ra/britpasswdreset.png)
+
+We can test this operation using crackmapexec to see weather the password has changed or not.
+
+**Checking SMB access**
+![](/assets/images/ra/britsmbtest.png)
+
+**Checking WINRM access**
+![](/assets/images/ra/britwinrmtest.png)
+
+The user has only access to SMB we can now use smbclient to download the hosts file and reupload after making the necessary changes.
+
+![](/assets/images/ra/britsmbclient.png)
+![](/assets/images/ra/britsmbclient2.png)
+
+** Command Injection Payload **
+![](/assets/images/ra/host.png)
+
+![](/assets/images/ra/puthost.png)
+
+After couple of seconds we can check weather our user is created and added to the Administrator group.
+
+![](/assets/images/ra/admin.png)
+
+Our user is now added to the Administrator group we can now either use psexec or evil-winrm to gain access to the machine and read the last flag.
+
+![](/assets/images/ra/adminflag.png)
