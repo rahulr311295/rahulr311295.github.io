@@ -73,11 +73,7 @@ The pointer scan result shows more that 5000 potential pointer paths to verify t
 ![](/assets/images/pwnadventure/partII/pointer3.PNG)
 Reattaching the game to cheat engine and checking the pointer scan result we can see that the values are all gone since the previous address is no longer available we can now rescan this pointer map for the value of 200 and see if we have some valid pointers.
 ![](/assets/images/pwnadventure/partII/pointer4.PNG)
-Since we have restarted the game we need to find the player speed address again and copy the address and use that address to rescan for pointers.
-![](assets/images/pwnadventure/partII/pointer5.PNG)
-![](assets/images/pwnadventure/partII/pointer6.jpeg)
-We can see that the result has just shrunk to 14 possible pointers we can add all or a couple to our address list and check if the value gets updated once we restart the game.
-![](assets/images/pwnadventure/partII/pointer7.jpeg)
-We know that the player's speed and jump velocity are apart by just 4 bytes we can add the last offset with 4 to get a pointer path to the jump velocity. 
+Since we have restarted the game we need to find the player speed address again and copy the address and use that address to rescan for pointers by repeating this process we eventually end up in a pointer path that is valid.
+![](/assets/images/pwnadventure/partII/cheattable.PNG)
 
 >The cheat engine cheat table is available in my [github](https://github.com/rahulr311295/GameTrainers/blob/main/PwnAdventure3/CheatTable/PwnAdventure3.CT) if anyone wishes to try out.
