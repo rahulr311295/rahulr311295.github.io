@@ -5,7 +5,7 @@ excerpt: "Creating Speed Hack and Super Jump on Pwn Adventure 3 using Cheat Engi
 date: 2022-04-15
 classes: wide
 header:
-  teaser: /assets/images/pwnadventure/logo.png
+  teaser: /assets/images/pwnadventure/partII/cheattable.PNG
   teaser_home_page: true
 categories:
   - capture the flag
