@@ -70,7 +70,7 @@
 
 
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Rahul R Feed">
-
+<link rel="shortcut icon" type="image/png" href="/assets/images/hacker.png"/>
 <!-- https://t.co/dKP3o1e -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -395,8 +395,9 @@ Most of the challenges where based on reverse engineering binaries.</p>
 
 <p><img src="/assets/images/sector443/sector443_steg.png" alt="" /></p>
 
-<p>The challenge gives us a GIF of Captain America flying.
-<img src="/assets/images/sector443/captain.gif" alt="" /></p>
+<p>The challenge gives us a GIF of Captain America flying.</p>
+
+<p><img src="/assets/images/sector443/captain.gif" alt="" /></p>
 
 <p>By running binwalk over it to check for hidden files we can see that there is a RAR file embedded in the GIF.</p>
 
@@ -420,8 +421,9 @@ Most of the challenges where based on reverse engineering binaries.</p>
 
 <p>Now we have to find the Unlock Request , As the challenge description says the the unlock request is send through an app so the Source would be a Smart Phone and the destination is the Smart Lock.</p>
 
-<p>By Filtering the source and searching for a Value attribute I was able to figure out the Unlock request.
-<img src="/assets/images/sector443/wireshark1.png" alt="" /></p>
+<p>By Filtering the source and searching for a Value attribute I was able to figure out the Unlock request.</p>
+
+<p><img src="/assets/images/sector443/wireshark1.png" alt="" /></p>
 
 <p>As the image shows a Send Write Request is generated from a Redmi4 to the Smart Lock with the handle of 0x0003 and as per the challenge description there should be 5 requests by counting them I knew this was it.</p>
 
@@ -429,8 +431,9 @@ Most of the challenges where based on reverse engineering binaries.</p>
 
 <p><img src="/assets/images/sector443/sector443_osint.png" alt="" /></p>
 
-<p>In this challenge the goal is to find a person whose name is “Peter Grulich” who likes ponies and we need to find the flag.I started my search in google by entering the following.
-<img src="/assets/images/sector443/sector443_osint_google.png" alt="" /></p>
+<p>In this challenge the goal is to find a person whose name is “Peter Grulich” who likes ponies and we need to find the flag.I started my search in google by entering the following.</p>
+
+<p><img src="/assets/images/sector443/sector443_osint_google.png" alt="" /></p>
 
 <p><img src="/assets/images/sector443/sector443_osint_git.png" alt="" /></p>
 
@@ -540,7 +543,7 @@ By doing an NMAP on the IP address we can see that a port 8080 is open which is 
     
       
       
-      <a href="/tags/#jeoprady" class="page__taxonomy-item" rel="tag">jeoprady</a>
+      <a href="/tags/#jeopardy" class="page__taxonomy-item" rel="tag">jeopardy</a>
     
     </span>
   </p>
@@ -616,7 +619,7 @@ By doing an NMAP on the IP address we can see that a port 8080 is open which is 
   </ul>
 </div>
 
-<div class="page__footer-copyright">&copy; 2021 Rahul R</div>
+<div class="page__footer-copyright">&copy; 2022 Rahul R</div>
 
       </footer>
     </div>

